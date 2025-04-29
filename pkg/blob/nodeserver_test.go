@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -62,12 +62,12 @@ func TestNodeGetInfo(t *testing.T) {
 func TestNodeGetCapabilities(t *testing.T) {
 	d := NewFakeDriver()
 	capType := &csi.NodeServiceCapability_Rpc{
-	        Rpc: &csi.NodeServiceCapability_RPC{
-	                Type: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
-	        },
+			Rpc: &csi.NodeServiceCapability_RPC{
+					Type: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
+			},
 	}
 	capList := []*csi.NodeServiceCapability{{
-	        Type: capType,
+			Type: capType,
 	}}
 	d.NSCap = capList
 	// Test valid request
@@ -85,35 +85,35 @@ func TestEnsureMountPoint(t *testing.T) {
 	azureFile := "./azure.go"
 
 	tests := []struct {
-	        desc        string
-	        target      string
-	        expectedErr error
+			desc        string
+			target      string
+			expectedErr error
 	}{
-	        {
-	                desc:        "[Error] Mocked by IsLikelyNotMountPoint",
-	                target:      errorTarget,
-	                expectedErr: fmt.Errorf("fake IsLikelyNotMountPoint: fake error"),
-	        },
-	        {
-	                desc:        "[Error] Error opening file",
-	                target:      falseTarget,
-	                expectedErr: &os.PathError{Op: "open", Path: "./false_is_likely_target", Err: syscall.ENOENT},
-	        },
-	        {
-	                desc:        "[Error] Not a directory",
-	                target:      azureFile,
-	                expectedErr: &os.PathError{Op: "mkdir", Path: "./azure.go", Err: syscall.ENOTDIR},
-	        },
-	        {
-	                desc:        "[Success] Successful run",
-	                target:      targetTest,
-	                expectedErr: nil,
-	        },
-	        {
-	                desc:        "[Success] Already existing mount",
-	                target:      alreadyExistTarget,
-	                expectedErr: nil,
-	        },
+			{
+					desc:        "[Error] Mocked by IsLikelyNotMountPoint",
+					target:      errorTarget,
+					expectedErr: fmt.Errorf("fake IsLikelyNotMountPoint: fake error"),
+			},
+			{
+					desc:        "[Error] Error opening file",
+					target:      falseTarget,
+					expectedErr: &os.PathError{Op: "open", Path: "./false_is_likely_target", Err: syscall.ENOENT},
+			},
+			{
+					desc:        "[Error] Not a directory",
+					target:      azureFile,
+					expectedErr: &os.PathError{Op: "mkdir", Path: "./azure.go", Err: syscall.ENOTDIR},
+			},
+			{
+					desc:        "[Success] Successful run",
+					target:      targetTest,
+					expectedErr: nil,
+			},
+			{
+					desc:        "[Success] Already existing mount",
+					target:      alreadyExistTarget,
+					expectedErr: nil,
+			},
 	}
 
 	// Setup
@@ -122,15 +122,15 @@ func TestEnsureMountPoint(t *testing.T) {
 	fakeMounter := &fakeMounter{}
 	fakeExec := &testingexec.FakeExec{ExactOrder: true}
 	d.mounter = &mount.SafeFormatAndMount{
-	        Interface: fakeMounter,
-	        Exec:      fakeExec,
+			Interface: fakeMounter,
+			Exec:      fakeExec,
 	}
 
 	for _, test := range tests {
-	        _, err := d.ensureMountPoint(test.target, 0777)
-	        if !reflect.DeepEqual(err, test.expectedErr) {
-	                t.Errorf("[%s]: Unexpected Error: %v, expected error: %v", test.desc, err, test.expectedErr)
-	        }
+			_, err := d.ensureMountPoint(test.target, 0777)
+			if !reflect.DeepEqual(err, test.expectedErr) {
+					t.Errorf("[%s]: Unexpected Error: %v, expected error: %v", test.desc, err, test.expectedErr)
+			}
 	}
 
 	// Clean up
@@ -152,158 +152,158 @@ func TestNewMountClient(t *testing.T) {
 func TestNodePublishVolume(t *testing.T) {
 	volumeCap := csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER}
 	createDirError := status.Errorf(codes.Internal,
-	        "Could not mount target \"./azure.go\": mkdir ./azure.go: not a directory")
+			"Could not mount target \"./azure.go\": mkdir ./azure.go: not a directory")
 	if runtime.GOOS == "windows" {
-	        createDirError = status.Errorf(codes.Internal,
-	                "Could not mount target \"./azure.go\": mkdir ./azure.go: "+
-	                        "The system cannot find the path specified.")
+			createDirError = status.Errorf(codes.Internal,
+					"Could not mount target \"./azure.go\": mkdir ./azure.go: "+
+							"The system cannot find the path specified.")
 	}
 	tests := []struct {
-	        desc        string
-	        setup       func(*Driver)
-	        req         *csi.NodePublishVolumeRequest
-	        expectedErr error
-	        cleanup     func(*Driver)
+			desc        string
+			setup       func(*Driver)
+			req         *csi.NodePublishVolumeRequest
+			expectedErr error
+			cleanup     func(*Driver)
 	}{
-	        {
-	                desc:        "Volume capabilities missing",
-	                req:         &csi.NodePublishVolumeRequest{},
-	                expectedErr: status.Error(codes.InvalidArgument, "Volume capability missing in request"),
-	        },
-	        {
-	                desc:        "Volume ID missing",
-	                req:         &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap}},
-	                expectedErr: status.Error(codes.InvalidArgument, "Volume ID missing in request"),
-	        },
-	        {
-	                desc: "Stage path missing",
-	                req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:   "vol_1",
-	                        TargetPath: sourceTest},
-	                expectedErr: status.Error(codes.InvalidArgument, "Staging target not provided"),
-	        },
-	        {
-	                desc: "Stage target path missing",
-	                req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:          "vol_1",
-	                        StagingTargetPath: sourceTest},
-	                expectedErr: status.Error(codes.InvalidArgument, "Target path not provided"),
-	        },
-	        {
-	                desc: "Valid request read only",
-	                req: &csi.NodePublishVolumeRequest{
-	                        VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:          "vol_1",
-	                        TargetPath:        targetTest,
-	                        StagingTargetPath: sourceTest,
-	                        VolumeContext: map[string]string{
-	                                mountPermissionsField: "0755",
-	                        },
-	                        Readonly: true,
-	                },
-	                expectedErr: nil,
-	        },
-	        {
-	                desc: "Error creating directory",
-	                req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:          "vol_1",
-	                        TargetPath:        "./azure.go",
-	                        StagingTargetPath: sourceTest,
-	                        Readonly:          true},
-	                expectedErr: createDirError,
-	        },
-	        {
-	                desc: "Error mounting resource busy",
-	                req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:          "vol_1",
-	                        TargetPath:        targetTest,
-	                        StagingTargetPath: sourceTest,
-	                        Readonly:          true},
-	                expectedErr: nil,
-	        },
-	        {
-	                desc: "[Error] invalid mountPermissions",
-	                req: &csi.NodePublishVolumeRequest{
-	                        VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:          "vol_1",
-	                        TargetPath:        targetTest,
-	                        StagingTargetPath: sourceTest,
-	                        VolumeContext: map[string]string{
-	                                mountPermissionsField: "07ab",
-	                        },
-	                },
-	                expectedErr: status.Error(codes.InvalidArgument, fmt.Sprintf("invalid mountPermissions %s", "07ab")),
-	        },
-	        {
-	                desc: "Service account token volume",
-	                req: &csi.NodePublishVolumeRequest{
-	                        VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:         "vol_1",
-	                        TargetPath:       targetTest,
-	                        VolumeContext: map[string]string{
-	                                serviceAccountTokenField: "token-data",
-	                                clientIDField:           "test-client-id",
-	                        },
-	                },
-	                expectedErr: status.Error(codes.Internal, "failed to list keys, error: parameter accountName cannot be empty"),
-	                setup: func(d *Driver) {
-	                        // Mock NodeStageVolume to return success
-	                        d.cloud.ResourceGroup = "rg"
-	                },
-	        },
-	        {
-	                desc: "Ephemeral volume with allowInlineVolumeKeyAccessWithIdentity=false",
-	                req: &csi.NodePublishVolumeRequest{
-	                        VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:         "vol_1",
-	                        TargetPath:       targetTest,
-	                        VolumeContext: map[string]string{
-	                                ephemeralField:     trueValue,
-	                                podNamespaceField:  "test-namespace",
-	                                storageAccountField: "test-account",
-	                                containerNameField: "test-container",
-	                        },
-	                },
-	                expectedErr: status.Error(codes.Internal, "Mount failed with error: exec: \"blobfuse\": executable file not found in $PATH, output: "),
-	                setup: func(d *Driver) {
-	                        // Set allowInlineVolumeKeyAccessWithIdentity to false
-	                        d.allowInlineVolumeKeyAccessWithIdentity = false
-	                        d.cloud.ResourceGroup = "rg"
-	                },
-	        },
-	        {
-	                desc: "Ephemeral volume with allowInlineVolumeKeyAccessWithIdentity=true",
-	                req: &csi.NodePublishVolumeRequest{
-	                        VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:         "vol_1",
-	                        TargetPath:       targetTest,
-	                        VolumeContext: map[string]string{
-	                                ephemeralField:     trueValue,
-	                                podNamespaceField:  "test-namespace",
-	                                storageAccountField: "test-account",
-	                                containerNameField: "test-container",
-	                        },
-	                },
-	                expectedErr: status.Error(codes.Internal, "no key for storage account(test-account) under resource group(rg), err StorageAccountClient is nil"),
-	                setup: func(d *Driver) {
-	                        // Set allowInlineVolumeKeyAccessWithIdentity to true
-	                        d.allowInlineVolumeKeyAccessWithIdentity = true
-	                },
-	        },
-	        {
-	                desc: "Mock mount enabled",
-	                req: &csi.NodePublishVolumeRequest{
-	                        VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        VolumeId:         "vol_1",
-	                        TargetPath:       targetTest,
-	                        StagingTargetPath: sourceTest,
-	                },
-	                expectedErr: nil,
-	                setup: func(d *Driver) {
-	                        // Enable mock mount
-	                        d.enableBlobMockMount = true
-	                },
-	        },
+			{
+					desc:        "Volume capabilities missing",
+					req:         &csi.NodePublishVolumeRequest{},
+					expectedErr: status.Error(codes.InvalidArgument, "Volume capability missing in request"),
+			},
+			{
+					desc:        "Volume ID missing",
+					req:         &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap}},
+					expectedErr: status.Error(codes.InvalidArgument, "Volume ID missing in request"),
+			},
+			{
+					desc: "Stage path missing",
+					req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:   "vol_1",
+							TargetPath: sourceTest},
+					expectedErr: status.Error(codes.InvalidArgument, "Staging target not provided"),
+			},
+			{
+					desc: "Stage target path missing",
+					req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:          "vol_1",
+							StagingTargetPath: sourceTest},
+					expectedErr: status.Error(codes.InvalidArgument, "Target path not provided"),
+			},
+			{
+					desc: "Valid request read only",
+					req: &csi.NodePublishVolumeRequest{
+							VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:          "vol_1",
+							TargetPath:        targetTest,
+							StagingTargetPath: sourceTest,
+							VolumeContext: map[string]string{
+									mountPermissionsField: "0755",
+							},
+							Readonly: true,
+					},
+					expectedErr: nil,
+			},
+			{
+					desc: "Error creating directory",
+					req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:          "vol_1",
+							TargetPath:        "./azure.go",
+							StagingTargetPath: sourceTest,
+							Readonly:          true},
+					expectedErr: createDirError,
+			},
+			{
+					desc: "Error mounting resource busy",
+					req: &csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:          "vol_1",
+							TargetPath:        targetTest,
+							StagingTargetPath: sourceTest,
+							Readonly:          true},
+					expectedErr: nil,
+			},
+			{
+					desc: "[Error] invalid mountPermissions",
+					req: &csi.NodePublishVolumeRequest{
+							VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:          "vol_1",
+							TargetPath:        targetTest,
+							StagingTargetPath: sourceTest,
+							VolumeContext: map[string]string{
+									mountPermissionsField: "07ab",
+							},
+					},
+					expectedErr: status.Error(codes.InvalidArgument, fmt.Sprintf("invalid mountPermissions %s", "07ab")),
+			},
+			{
+					desc: "Service account token volume",
+					req: &csi.NodePublishVolumeRequest{
+							VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:         "vol_1",
+							TargetPath:       targetTest,
+							VolumeContext: map[string]string{
+									serviceAccountTokenField: "token-data",
+									clientIDField:           "test-client-id",
+							},
+					},
+					expectedErr: status.Error(codes.Internal, "failed to list keys, error: parameter accountName cannot be empty"),
+					setup: func(d *Driver) {
+							// Mock NodeStageVolume to return success
+							d.cloud.ResourceGroup = "rg"
+					},
+			},
+			{
+					desc: "Ephemeral volume with allowInlineVolumeKeyAccessWithIdentity=false",
+					req: &csi.NodePublishVolumeRequest{
+							VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:         "vol_1",
+							TargetPath:       targetTest,
+							VolumeContext: map[string]string{
+									ephemeralField:     trueValue,
+									podNamespaceField:  "test-namespace",
+									storageAccountField: "test-account",
+									containerNameField: "test-container",
+							},
+					},
+					expectedErr: status.Error(codes.Internal, "Mount failed with error: exec: \"blobfuse\": executable file not found in $PATH, output: "),
+					setup: func(d *Driver) {
+							// Set allowInlineVolumeKeyAccessWithIdentity to false
+							d.allowInlineVolumeKeyAccessWithIdentity = false
+							d.cloud.ResourceGroup = "rg"
+					},
+			},
+			{
+					desc: "Ephemeral volume with allowInlineVolumeKeyAccessWithIdentity=true",
+					req: &csi.NodePublishVolumeRequest{
+							VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:         "vol_1",
+							TargetPath:       targetTest,
+							VolumeContext: map[string]string{
+									ephemeralField:     trueValue,
+									podNamespaceField:  "test-namespace",
+									storageAccountField: "test-account",
+									containerNameField: "test-container",
+							},
+					},
+					expectedErr: status.Error(codes.Internal, "no key for storage account(test-account) under resource group(rg), err StorageAccountClient is nil"),
+					setup: func(d *Driver) {
+							// Set allowInlineVolumeKeyAccessWithIdentity to true
+							d.allowInlineVolumeKeyAccessWithIdentity = true
+					},
+			},
+			{
+					desc: "Mock mount enabled",
+					req: &csi.NodePublishVolumeRequest{
+							VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
+							VolumeId:         "vol_1",
+							TargetPath:       targetTest,
+							StagingTargetPath: sourceTest,
+					},
+					expectedErr: nil,
+					setup: func(d *Driver) {
+							// Enable mock mount
+							d.enableBlobMockMount = true
+					},
+			},
 
 	}
 
@@ -315,28 +315,28 @@ func TestNodePublishVolume(t *testing.T) {
 	fakeMounter := &fakeMounter{}
 	fakeExec := &testingexec.FakeExec{ExactOrder: true}
 	d.mounter = &mount.SafeFormatAndMount{
-	        Interface: fakeMounter,
-	        Exec:      fakeExec,
+			Interface: fakeMounter,
+			Exec:      fakeExec,
 	}
 
 	for _, test := range tests {
-	        d.cloud.ResourceGroup = "rg"
-	        if test.setup != nil {
-	                test.setup(d)
-	        }
-	        _, err := d.NodePublishVolume(context.Background(), test.req)
+			d.cloud.ResourceGroup = "rg"
+			if test.setup != nil {
+					test.setup(d)
+			}
+			_, err := d.NodePublishVolume(context.Background(), test.req)
 
-	        if err != nil && test.expectedErr != nil {
-	                t.Logf("Desc: %s - Error message: %q - Expected: %q", test.desc, err.Error(), test.expectedErr.Error())
-	                if err.Error() != test.expectedErr.Error() {
-	                        t.Errorf("Desc: %s - Unexpected error: %v - Expected: %v", test.desc, err, test.expectedErr)
-	                }
-	        } else if (err == nil && test.expectedErr != nil) || (err != nil && test.expectedErr == nil) {
-	                t.Errorf("Desc: %s - Unexpected error: %v - Expected: %v", test.desc, err, test.expectedErr)
-	        }
-	        if test.cleanup != nil {
-	                test.cleanup(d)
-	        }
+			if err != nil && test.expectedErr != nil {
+					t.Logf("Desc: %s - Error message: %q - Expected: %q", test.desc, err.Error(), test.expectedErr.Error())
+					if err.Error() != test.expectedErr.Error() {
+							t.Errorf("Desc: %s - Unexpected error: %v - Expected: %v", test.desc, err, test.expectedErr)
+					}
+			} else if (err == nil && test.expectedErr != nil) || (err != nil && test.expectedErr == nil) {
+					t.Errorf("Desc: %s - Unexpected error: %v - Expected: %v", test.desc, err, test.expectedErr)
+			}
+			if test.cleanup != nil {
+					test.cleanup(d)
+			}
 	}
 
 	// Clean up
@@ -351,22 +351,22 @@ func TestNodePublishVolume(t *testing.T) {
 
 func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 	if runtime.GOOS != "linux" || os.Getuid() != 0 {
-	        return
+			return
 	}
 	_ = makeDir(sourceTest)
 	_ = makeDir(targetTest)
 	d := NewFakeDriver()
 	d.mounter = &mount.SafeFormatAndMount{
-	        Interface: mount.New(""),
-	        Exec:      utilexec.New(),
+			Interface: mount.New(""),
+			Exec:      utilexec.New(),
 	}
 
 	volumeCap := csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER}
 	req := csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap},
-	        VolumeId:          "vol_1",
-	        TargetPath:        targetTest,
-	        StagingTargetPath: sourceTest,
-	        Readonly:          true}
+			VolumeId:          "vol_1",
+			TargetPath:        targetTest,
+			StagingTargetPath: sourceTest,
+			Readonly:          true}
 
 	_, err := d.NodePublishVolume(context.Background(), &req)
 	assert.NoError(t, err)
@@ -381,9 +381,9 @@ func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 	assert.NoError(t, err)
 	mountPointNum := 0
 	for _, mountPoint := range mountList {
-	        if mountPoint.Path == targetAbs {
-	                mountPointNum++
-	        }
+			if mountPoint.Path == targetAbs {
+					mountPointNum++
+			}
 	}
 	assert.Equal(t, 1, mountPointNum)
 	err = d.mounter.Unmount(targetTest)
@@ -397,27 +397,27 @@ func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 
 func TestNodeUnpublishVolume(t *testing.T) {
 	tests := []struct {
-	        desc        string
-	        setup       func(*Driver)
-	        req         *csi.NodeUnpublishVolumeRequest
-	        expectedErr error
-	        cleanup     func(*Driver)
+			desc        string
+			setup       func(*Driver)
+			req         *csi.NodeUnpublishVolumeRequest
+			expectedErr error
+			cleanup     func(*Driver)
 	}{
-	        {
-	                desc:        "Volume ID missing",
-	                req:         &csi.NodeUnpublishVolumeRequest{TargetPath: targetTest},
-	                expectedErr: status.Error(codes.InvalidArgument, "Volume ID missing in request"),
-	        },
-	        {
-	                desc:        "Target missing",
-	                req:         &csi.NodeUnpublishVolumeRequest{VolumeId: "vol_1"},
-	                expectedErr: status.Error(codes.InvalidArgument, "Target path missing in request"),
-	        },
-	        {
-	                desc:        "Valid request",
-	                req:         &csi.NodeUnpublishVolumeRequest{TargetPath: "./abc.go", VolumeId: "vol_1"},
-	                expectedErr: nil,
-	        },
+			{
+					desc:        "Volume ID missing",
+					req:         &csi.NodeUnpublishVolumeRequest{TargetPath: targetTest},
+					expectedErr: status.Error(codes.InvalidArgument, "Volume ID missing in request"),
+			},
+			{
+					desc:        "Target missing",
+					req:         &csi.NodeUnpublishVolumeRequest{VolumeId: "vol_1"},
+					expectedErr: status.Error(codes.InvalidArgument, "Target path missing in request"),
+			},
+			{
+					desc:        "Valid request",
+					req:         &csi.NodeUnpublishVolumeRequest{TargetPath: "./abc.go", VolumeId: "vol_1"},
+					expectedErr: nil,
+			},
 	}
 
 	// Setup
@@ -428,22 +428,22 @@ func TestNodeUnpublishVolume(t *testing.T) {
 	fakeMounter := &fakeMounter{}
 	fakeExec := &testingexec.FakeExec{ExactOrder: true}
 	d.mounter = &mount.SafeFormatAndMount{
-	        Interface: fakeMounter,
-	        Exec:      fakeExec,
+			Interface: fakeMounter,
+			Exec:      fakeExec,
 	}
 
 	for _, test := range tests {
-	        if test.setup != nil {
-	                test.setup(d)
-	        }
-	        _, err := d.NodeUnpublishVolume(context.Background(), test.req)
+			if test.setup != nil {
+					test.setup(d)
+			}
+			_, err := d.NodeUnpublishVolume(context.Background(), test.req)
 
-	        if !reflect.DeepEqual(err, test.expectedErr) {
-	                t.Errorf("Unexpected error: %v", err)
-	        }
-	        if test.cleanup != nil {
-	                test.cleanup(d)
-	        }
+			if !reflect.DeepEqual(err, test.expectedErr) {
+					t.Errorf("Unexpected error: %v", err)
+			}
+			if test.cleanup != nil {
+					test.cleanup(d)
+			}
 	}
 
 	//Clean up
@@ -458,291 +458,291 @@ func TestNodeUnpublishVolume(t *testing.T) {
 func TestNodeStageVolume(t *testing.T) {
 	volumeCap := csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER}
 	testCases := []struct {
-	        name     string
-	        testFunc func(t *testing.T)
+			name     string
+			testFunc func(t *testing.T)
 	}{
-	        {
-	                name: "Volume ID missing",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{}
-	                        d := NewFakeDriver()
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.InvalidArgument, "Volume ID missing in request")
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "Staging target not provided",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId: "unit-test",
-	                        }
-	                        d := NewFakeDriver()
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.InvalidArgument, "Staging target not provided")
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "Volume capability missing",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "unit-test",
-	                                StagingTargetPath: "unit-test",
-	                        }
-	                        d := NewFakeDriver()
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.InvalidArgument, "Volume capability not provided")
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "Volume operation in progress",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "unit-test",
-	                                StagingTargetPath: "unit-test",
-	                                VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        }
-	                        d := NewFakeDriver()
-	                        d.volumeLocks.TryAcquire(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
-	                        defer d.volumeLocks.Release(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.Aborted, fmt.Sprintf(volumeOperationAlreadyExistsFmt, "unit-test"))
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "[Error] invalid mountPermissions",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "unit-test",
-	                                StagingTargetPath: "unit-test",
-	                                VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                                VolumeContext: map[string]string{
-	                                        mountPermissionsField: "07ab",
-	                                },
-	                        }
-	                        d := NewFakeDriver()
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.InvalidArgument, fmt.Sprintf("invalid mountPermissions %s", "07ab"))
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "[Error] Invalid fsGroupChangePolicy",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "unit-test",
-	                                StagingTargetPath: "unit-test",
-	                                VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                                VolumeContext: map[string]string{
-	                                        fsGroupChangePolicyField: "test_fsGroupChangePolicy",
-	                                },
-	                        }
-	                        d := NewFakeDriver()
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.InvalidArgument, "fsGroupChangePolicy(test_fsGroupChangePolicy) is not supported, supported fsGroupChangePolicy list: [None Always OnRootMismatch]")
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "[Error] Could not mount to target",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "unit-test",
-	                                StagingTargetPath: "error_is_likely",
-	                                VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                                VolumeContext: map[string]string{
-	                                        mountPermissionsField: "0755",
-	                                },
-	                        }
-	                        d := NewFakeDriver()
-	                        fakeMounter := &fakeMounter{}
-	                        fakeExec := &testingexec.FakeExec{}
-	                        d.mounter = &mount.SafeFormatAndMount{
-	                                Interface: fakeMounter,
-	                                Exec:      fakeExec,
-	                        }
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.Internal, fmt.Sprintf("Could not mount target %q: %v", req.StagingTargetPath, fmt.Errorf("fake IsLikelyNotMountPoint: fake error")))
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "protocol = nfs",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "rg#acc#cont#ns",
-	                                StagingTargetPath: targetTest,
-	                                VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                                VolumeContext: map[string]string{
-	                                        mountPermissionsField: "0755",
-	                                        protocolField:         "nfs",
-	                                },
-	                                Secrets: map[string]string{},
-	                        }
-	                        d := NewFakeDriver()
-	                        d.cloud = provider.GetTestCloud(gomock.NewController(t))
-	                        d.cloud.ResourceGroup = "rg"
-	                        d.enableBlobMockMount = true
-	                        fakeMounter := &fakeMounter{}
-	                        fakeExec := &testingexec.FakeExec{}
-	                        d.mounter = &mount.SafeFormatAndMount{
-	                                Interface: fakeMounter,
-	                                Exec:      fakeExec,
-	                        }
+			{
+					name: "Volume ID missing",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{}
+							d := NewFakeDriver()
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.InvalidArgument, "Volume ID missing in request")
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "Staging target not provided",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId: "unit-test",
+							}
+							d := NewFakeDriver()
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.InvalidArgument, "Staging target not provided")
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "Volume capability missing",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "unit-test",
+									StagingTargetPath: "unit-test",
+							}
+							d := NewFakeDriver()
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.InvalidArgument, "Volume capability not provided")
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "Volume operation in progress",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "unit-test",
+									StagingTargetPath: "unit-test",
+									VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+							}
+							d := NewFakeDriver()
+							d.volumeLocks.TryAcquire(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
+							defer d.volumeLocks.Release(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.Aborted, fmt.Sprintf(volumeOperationAlreadyExistsFmt, "unit-test"))
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "[Error] invalid mountPermissions",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "unit-test",
+									StagingTargetPath: "unit-test",
+									VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+									VolumeContext: map[string]string{
+											mountPermissionsField: "07ab",
+									},
+							}
+							d := NewFakeDriver()
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.InvalidArgument, fmt.Sprintf("invalid mountPermissions %s", "07ab"))
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "[Error] Invalid fsGroupChangePolicy",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "unit-test",
+									StagingTargetPath: "unit-test",
+									VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+									VolumeContext: map[string]string{
+											fsGroupChangePolicyField: "test_fsGroupChangePolicy",
+									},
+							}
+							d := NewFakeDriver()
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.InvalidArgument, "fsGroupChangePolicy(test_fsGroupChangePolicy) is not supported, supported fsGroupChangePolicy list: [None Always OnRootMismatch]")
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "[Error] Could not mount to target",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "unit-test",
+									StagingTargetPath: "error_is_likely",
+									VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+									VolumeContext: map[string]string{
+											mountPermissionsField: "0755",
+									},
+							}
+							d := NewFakeDriver()
+							fakeMounter := &fakeMounter{}
+							fakeExec := &testingexec.FakeExec{}
+							d.mounter = &mount.SafeFormatAndMount{
+									Interface: fakeMounter,
+									Exec:      fakeExec,
+							}
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.Internal, fmt.Sprintf("Could not mount target %q: %v", req.StagingTargetPath, fmt.Errorf("fake IsLikelyNotMountPoint: fake error")))
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "protocol = nfs",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "rg#acc#cont#ns",
+									StagingTargetPath: targetTest,
+									VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+									VolumeContext: map[string]string{
+											mountPermissionsField: "0755",
+											protocolField:         "nfs",
+									},
+									Secrets: map[string]string{},
+							}
+							d := NewFakeDriver()
+							d.cloud = provider.GetTestCloud(gomock.NewController(t))
+							d.cloud.ResourceGroup = "rg"
+							d.enableBlobMockMount = true
+							fakeMounter := &fakeMounter{}
+							fakeExec := &testingexec.FakeExec{}
+							d.mounter = &mount.SafeFormatAndMount{
+									Interface: fakeMounter,
+									Exec:      fakeExec,
+							}
 
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        //expectedErr := nil
-	                        if !reflect.DeepEqual(err, nil) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, nil)
-	                        }
-	                },
-	        },
-	        {
-	                name: "BlobMockMount Enabled",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "rg#acc#cont#ns",
-	                                StagingTargetPath: targetTest,
-	                                VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                                VolumeContext: map[string]string{
-	                                        mountPermissionsField: "0755",
-	                                        protocolField:         "protocol",
-	                                },
-	                                Secrets: map[string]string{},
-	                        }
-	                        d := NewFakeDriver()
-	                        d.cloud = provider.GetTestCloud(gomock.NewController(t))
-	                        d.cloud.ResourceGroup = "rg"
-	                        d.enableBlobMockMount = true
-	                        fakeMounter := &fakeMounter{}
-	                        fakeExec := &testingexec.FakeExec{}
-	                        d.mounter = &mount.SafeFormatAndMount{
-	                                Interface: fakeMounter,
-	                                Exec:      fakeExec,
-	                        }
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							//expectedErr := nil
+							if !reflect.DeepEqual(err, nil) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, nil)
+							}
+					},
+			},
+			{
+					name: "BlobMockMount Enabled",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "rg#acc#cont#ns",
+									StagingTargetPath: targetTest,
+									VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+									VolumeContext: map[string]string{
+											mountPermissionsField: "0755",
+											protocolField:         "protocol",
+									},
+									Secrets: map[string]string{},
+							}
+							d := NewFakeDriver()
+							d.cloud = provider.GetTestCloud(gomock.NewController(t))
+							d.cloud.ResourceGroup = "rg"
+							d.enableBlobMockMount = true
+							fakeMounter := &fakeMounter{}
+							fakeExec := &testingexec.FakeExec{}
+							d.mounter = &mount.SafeFormatAndMount{
+									Interface: fakeMounter,
+									Exec:      fakeExec,
+							}
 
-	                        keyList := make([]storage.AccountKey, 1)
-	                        fakeKey := "fakeKey"
-	                        fakeValue := "fakeValue"
-	                        keyList[0] = (storage.AccountKey{
-	                                KeyName: &fakeKey,
-	                                Value:   &fakeValue,
-	                        })
-	                        d.cloud.StorageAccountClient = NewMockSAClient(context.Background(), gomock.NewController(t), "subID", "unit-test", "unit-test", &keyList)
+							keyList := make([]storage.AccountKey, 1)
+							fakeKey := "fakeKey"
+							fakeValue := "fakeValue"
+							keyList[0] = (storage.AccountKey{
+									KeyName: &fakeKey,
+									Value:   &fakeValue,
+							})
+							d.cloud.StorageAccountClient = NewMockSAClient(context.Background(), gomock.NewController(t), "subID", "unit-test", "unit-test", &keyList)
 
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        //expectedErr := nil
-	                        if !reflect.DeepEqual(err, nil) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, nil)
-	                        }
-	                },
-	        },
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							//expectedErr := nil
+							if !reflect.DeepEqual(err, nil) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, nil)
+							}
+					},
+			},
 	}
 	for _, tc := range testCases {
-	        t.Run(tc.name, tc.testFunc)
+			t.Run(tc.name, tc.testFunc)
 	}
 }
 
 func TestNodeUnstageVolume(t *testing.T) {
 	volumeCap := csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER}
 	testCases := []struct {
-	        name     string
-	        testFunc func(t *testing.T)
+			name     string
+			testFunc func(t *testing.T)
 	}{
-	        {
-	                name: "Volume ID missing",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeUnstageVolumeRequest{}
-	                        d := NewFakeDriver()
-	                        _, err := d.NodeUnstageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.InvalidArgument, "Volume ID not provided")
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "staging target missing",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeUnstageVolumeRequest{
-	                                VolumeId: "unit-test",
-	                        }
-	                        d := NewFakeDriver()
-	                        _, err := d.NodeUnstageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.InvalidArgument, "Staging target not provided")
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "Volume operation in progress",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeStageVolumeRequest{
-	                                VolumeId:          "unit-test",
-	                                StagingTargetPath: "unit-test",
-	                                VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
-	                        }
-	                        d := NewFakeDriver()
-	                        d.volumeLocks.TryAcquire(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
-	                        defer d.volumeLocks.Release(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
-	                        _, err := d.NodeStageVolume(context.TODO(), req)
-	                        expectedErr := status.Error(codes.Aborted, fmt.Sprintf(volumeOperationAlreadyExistsFmt, "unit-test"))
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
-	        {
-	                name: "mount point not exist ",
-	                testFunc: func(t *testing.T) {
-	                        req := &csi.NodeUnstageVolumeRequest{
-	                                VolumeId:          "unit-test",
-	                                StagingTargetPath: "./unit-test",
-	                        }
-	                        d := NewFakeDriver()
-	                        fakeMounter := &fakeMounter{}
-	                        fakeExec := &testingexec.FakeExec{}
-	                        d.mounter = &mount.SafeFormatAndMount{
-	                                Interface: fakeMounter,
-	                                Exec:      fakeExec,
-	                        }
-	                        _, err := d.NodeUnstageVolume(context.TODO(), req)
-	                        expectedErr := error(nil)
-	                        if !reflect.DeepEqual(err, expectedErr) {
-	                                t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
-	                        }
-	                },
-	        },
+			{
+					name: "Volume ID missing",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeUnstageVolumeRequest{}
+							d := NewFakeDriver()
+							_, err := d.NodeUnstageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.InvalidArgument, "Volume ID not provided")
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "staging target missing",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeUnstageVolumeRequest{
+									VolumeId: "unit-test",
+							}
+							d := NewFakeDriver()
+							_, err := d.NodeUnstageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.InvalidArgument, "Staging target not provided")
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "Volume operation in progress",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeStageVolumeRequest{
+									VolumeId:          "unit-test",
+									StagingTargetPath: "unit-test",
+									VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap},
+							}
+							d := NewFakeDriver()
+							d.volumeLocks.TryAcquire(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
+							defer d.volumeLocks.Release(fmt.Sprintf("%s-%s", "unit-test", "unit-test"))
+							_, err := d.NodeStageVolume(context.TODO(), req)
+							expectedErr := status.Error(codes.Aborted, fmt.Sprintf(volumeOperationAlreadyExistsFmt, "unit-test"))
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
+			{
+					name: "mount point not exist ",
+					testFunc: func(t *testing.T) {
+							req := &csi.NodeUnstageVolumeRequest{
+									VolumeId:          "unit-test",
+									StagingTargetPath: "./unit-test",
+							}
+							d := NewFakeDriver()
+							fakeMounter := &fakeMounter{}
+							fakeExec := &testingexec.FakeExec{}
+							d.mounter = &mount.SafeFormatAndMount{
+									Interface: fakeMounter,
+									Exec:      fakeExec,
+							}
+							_, err := d.NodeUnstageVolume(context.TODO(), req)
+							expectedErr := error(nil)
+							if !reflect.DeepEqual(err, expectedErr) {
+									t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+							}
+					},
+			},
 	}
 	for _, tc := range testCases {
-	        t.Run(tc.name, tc.testFunc)
+			t.Run(tc.name, tc.testFunc)
 	}
 }
 
 func makeDir(pathname string) error {
 	err := os.MkdirAll(pathname, os.FileMode(0755))
 	if err != nil {
-	        if !os.IsExist(err) {
-	                return err
-	        }
+			if !os.IsExist(err) {
+					return err
+			}
 	}
 	return nil
 }
@@ -756,7 +756,7 @@ func TestMakeDir(t *testing.T) {
 	err = makeDir("./azure.go")
 	var e *os.PathError
 	if !errors.As(err, &e) {
-	        t.Errorf("Unexpected Error: %v", err)
+			t.Errorf("Unexpected Error: %v", err)
 	}
 
 	// Remove the directory created
@@ -766,7 +766,7 @@ func TestMakeDir(t *testing.T) {
 
 func NewSafeMounter() (*mount.SafeFormatAndMount, error) {
 	return &mount.SafeFormatAndMount{
-	        Interface: mount.New(""),
+			Interface: mount.New(""),
 	}, nil
 }
 
@@ -781,30 +781,30 @@ func TestNodeGetVolumeStats(t *testing.T) {
 	fakePath := "/tmp/fake-volume-path"
 
 	tests := []struct {
-	        desc        string
-	        req         *csi.NodeGetVolumeStatsRequest
-	        expectedErr error
+			desc        string
+			req         *csi.NodeGetVolumeStatsRequest
+			expectedErr error
 	}{
-	        {
-	                desc:        "[Error] Volume ID missing",
-	                req:         &csi.NodeGetVolumeStatsRequest{VolumePath: targetTest},
-	                expectedErr: status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume ID was empty"),
-	        },
-	        {
-	                desc:        "[Error] VolumePath missing",
-	                req:         &csi.NodeGetVolumeStatsRequest{VolumeId: "vol_1"},
-	                expectedErr: status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume path was empty"),
-	        },
-	        {
-	                desc:        "[Error] Incorrect volume path",
-	                req:         &csi.NodeGetVolumeStatsRequest{VolumePath: nonexistedPath, VolumeId: "vol_1"},
-	                expectedErr: status.Errorf(codes.NotFound, "path /not/a/real/directory does not exist"),
-	        },
-	        {
-	                desc:        "[Success] Standard success",
-	                req:         &csi.NodeGetVolumeStatsRequest{VolumePath: fakePath, VolumeId: "vol_1"},
-	                expectedErr: nil,
-	        },
+			{
+					desc:        "[Error] Volume ID missing",
+					req:         &csi.NodeGetVolumeStatsRequest{VolumePath: targetTest},
+					expectedErr: status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume ID was empty"),
+			},
+			{
+					desc:        "[Error] VolumePath missing",
+					req:         &csi.NodeGetVolumeStatsRequest{VolumeId: "vol_1"},
+					expectedErr: status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume path was empty"),
+			},
+			{
+					desc:        "[Error] Incorrect volume path",
+					req:         &csi.NodeGetVolumeStatsRequest{VolumePath: nonexistedPath, VolumeId: "vol_1"},
+					expectedErr: status.Errorf(codes.NotFound, "path /not/a/real/directory does not exist"),
+			},
+			{
+					desc:        "[Success] Standard success",
+					req:         &csi.NodeGetVolumeStatsRequest{VolumePath: fakePath, VolumeId: "vol_1"},
+					expectedErr: nil,
+			},
 	}
 
 	// Setup
@@ -812,11 +812,11 @@ func TestNodeGetVolumeStats(t *testing.T) {
 	d := NewFakeDriver()
 
 	for _, test := range tests {
-	        _, err := d.NodeGetVolumeStats(context.Background(), test.req)
-	        //t.Errorf("[debug] error: %v\n metrics: %v", err, metrics)
-	        if !reflect.DeepEqual(err, test.expectedErr) {
-	                t.Errorf("desc: %v, expected error: %v, actual error: %v", test.desc, test.expectedErr, err)
-	        }
+			_, err := d.NodeGetVolumeStats(context.Background(), test.req)
+			//t.Errorf("[debug] error: %v\n metrics: %v", err, metrics)
+			if !reflect.DeepEqual(err, test.expectedErr) {
+					t.Errorf("desc: %v, expected error: %v, actual error: %v", test.desc, test.expectedErr, err)
+			}
 	}
 
 	// Clean up
@@ -830,7 +830,7 @@ func TestNodeExpandVolume(t *testing.T) {
 	resp, err := d.NodeExpandVolume(context.Background(), &req)
 	assert.Nil(t, resp)
 	if !reflect.DeepEqual(err, status.Error(codes.Unimplemented, "NodeExpandVolume is not yet implemented")) {
-	        t.Errorf("Unexpected error: %v", err)
+			t.Errorf("Unexpected error: %v", err)
 	}
 }
 
@@ -854,7 +854,7 @@ func TestMountBlobfuseInsideDriver(t *testing.T) {
 
 func Test_waitForMount(t *testing.T) {
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-	        t.Skip("Skipping test on ", runtime.GOOS)
+			t.Skip("Skipping test on ", runtime.GOOS)
 	}
 
 	tmpDir, err := os.MkdirTemp("", "")
@@ -862,79 +862,79 @@ func Test_waitForMount(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	type args struct {
-	        path     string
-	        intervel time.Duration
-	        timeout  time.Duration
+			path     string
+			intervel time.Duration
+			timeout  time.Duration
 	}
 
 	tests := []struct {
-	        name      string
-	        args      args
-	        wantErr   bool
-	        subErrMsg string
+			name      string
+			args      args
+			wantErr   bool
+			subErrMsg string
 	}{
-	        {
-	                name: "test error timeout",
-	                args: args{
-	                        path:     tmpDir,
-	                        intervel: 1 * time.Millisecond,
-	                        timeout:  10 * time.Millisecond,
-	                },
-	                wantErr:   true,
-	                subErrMsg: "timeout",
-	        },
-	        {
-	                name: "test error no such file or directory",
-	                args: args{
-	                        path:     "/no/such/file/or/directory",
-	                        intervel: 1 * time.Millisecond,
-	                        timeout:  10 * time.Millisecond,
-	                },
-	                wantErr:   true,
-	                subErrMsg: "no such file or directory",
-	        },
+			{
+					name: "test error timeout",
+					args: args{
+							path:     tmpDir,
+							intervel: 1 * time.Millisecond,
+							timeout:  10 * time.Millisecond,
+					},
+					wantErr:   true,
+					subErrMsg: "timeout",
+			},
+			{
+					name: "test error no such file or directory",
+					args: args{
+							path:     "/no/such/file/or/directory",
+							intervel: 1 * time.Millisecond,
+							timeout:  10 * time.Millisecond,
+					},
+					wantErr:   true,
+					subErrMsg: "no such file or directory",
+			},
 	}
 
 	for _, tt := range tests {
-	        t.Run(tt.name, func(t *testing.T) {
-	                err := waitForMount(tt.args.path, tt.args.intervel, tt.args.timeout)
-	                if (err != nil) != tt.wantErr {
-	                        t.Errorf("waitForMount() error = %v, wantErr %v", err, tt.wantErr)
-	                }
-	                if err != nil && !strings.Contains(err.Error(), tt.subErrMsg) {
-	                        t.Errorf("waitForMount() error = %v, wantErr %v", err, tt.subErrMsg)
-	                }
-	        })
+			t.Run(tt.name, func(t *testing.T) {
+					err := waitForMount(tt.args.path, tt.args.intervel, tt.args.timeout)
+					if (err != nil) != tt.wantErr {
+							t.Errorf("waitForMount() error = %v, wantErr %v", err, tt.wantErr)
+					}
+					if err != nil && !strings.Contains(err.Error(), tt.subErrMsg) {
+							t.Errorf("waitForMount() error = %v, wantErr %v", err, tt.subErrMsg)
+					}
+			})
 	}
 }
 
 func TestCheckGidPresentInMountFlags(t *testing.T) {
 	tests := []struct {
-	        desc       string
-	        MountFlags []string
-	        result     bool
+			desc       string
+			MountFlags []string
+			result     bool
 	}{
-	        {
-	                desc:       "[Success] Gid present in mount flags",
-	                MountFlags: []string{"gid=3000"},
-	                result:     true,
-	        },
-	        {
-	                desc:       "[Success] Gid present in mount flags",
-	                MountFlags: []string{"-o gid=3000"},
-	                result:     true,
-	        },
-	        {
-	                desc:       "[Success] Gid not present in mount flags",
-	                MountFlags: []string{},
-	                result:     false,
-	        },
+			{
+					desc:       "[Success] Gid present in mount flags",
+					MountFlags: []string{"gid=3000"},
+					result:     true,
+			},
+			{
+					desc:       "[Success] Gid present in mount flags",
+					MountFlags: []string{"-o gid=3000"},
+					result:     true,
+			},
+			{
+					desc:       "[Success] Gid not present in mount flags",
+					MountFlags: []string{},
+					result:     false,
+			},
 	}
 
 	for _, test := range tests {
-	        gIDPresent := checkGidPresentInMountFlags(test.MountFlags)
-	        if gIDPresent != test.result {
-	                t.Errorf("[%s]: Expected result : %t, Actual result: %t", test.desc, test.result, gIDPresent)
-	        }
+			gIDPresent := checkGidPresentInMountFlags(test.MountFlags)
+			if gIDPresent != test.result {
+					t.Errorf("[%s]: Expected result : %t, Actual result: %t", test.desc, test.result, gIDPresent)
+			}
 	}
 }
